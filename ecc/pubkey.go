@@ -16,6 +16,8 @@ const PublicKeyK1Prefix = "PUB_K1_"
 const PublicKeyR1Prefix = "PUB_R1_"
 const PublicKeyPrefixCompat = "EOS"
 
+var PublicKeyPrefixs = []string{"EOS", "ACC"}
+
 type innerPublicKey interface {
 	key(content []byte) (*btcec.PublicKey, error)
 	prefix() string
@@ -91,6 +93,19 @@ func NewPublicKey(pubKey string) (out PublicKey, err error) {
 			return out, fmt.Errorf("checkDecode: %s", err)
 		}
 		inner = &innerK1PublicKey{}
+	} else if len(PublicKeyPrefixs) > 0 {
+		for _, pre := range PublicKeyPrefixs {
+			if strings.HasPrefix(pubKey, pre) { // "XXX"
+				pubKeyMaterial := pubKey[len(pre):] // strip "XXX"
+				curveID = CurveK1
+				decodedPubKey, err = checkDecode(pubKeyMaterial, curveID)
+				if err != nil {
+					return out, fmt.Errorf("checkDecode: %s", err)
+				}
+				inner = &innerK1PublicKey{}
+			}
+		}
+
 	} else {
 		return out, fmt.Errorf("public key should start with [%q | %q] (or the old %q)", PublicKeyK1Prefix, PublicKeyR1Prefix, PublicKeyPrefixCompat)
 	}
